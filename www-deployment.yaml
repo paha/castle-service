@@ -25,7 +25,11 @@ metadata:
 spec:
   replicas: 5
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 5
+  minReadySeconds: 2
   template:
     metadata:
       labels:
@@ -36,6 +40,7 @@ spec:
       containers:
       - name: castle-www
         image: pahatmp/castle-www
+        imagePullPolicy: Always
         args: ["-backend", "castle-back"]
         ports:
         - containerPort: 80

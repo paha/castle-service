@@ -12,9 +12,7 @@ env:
 
 before_install:
   - if [[ ! -d ~/.kube/ ]]; then mkdir ~/.kube; fi
-  - openssl aes-256-cbc -K $encrypted_7f730eada40b_key -iv $encrypted_7f730eada40b_iv -in kube_config.yml.enc -out ~/.kube/config -d
-  - cat ~/.kube/config
-  - echo $encrypted_7f730eada40b_key
+  - openssl aes-256-cbc -K $encrypted_7f730eada40b_key -iv $encrypted_7f730eada40b_iv -in kube_config.yml.enc -out config -d
 
 before_script:
   - cd www
@@ -34,9 +32,9 @@ script:
   - docker push pahatmp/castle-www
   - docker push pahatmp/castle-back
   - echo "Setting up kubectl."
-  - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.6.6//bin/linux/amd64/kubectl
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - chmod +x ./kubectl
   - echo "Deploying to kube."
-  - ./kubectl rolling-update castle-www -f ./www-deployment.yaml
-  - ./kubectl rolling-update castle-www -f ./back-deployment.yaml
+  - ./kubectl --kubeconfig=./config --namespace=castle replace -f ./www-deployment.yaml
+  - ./kubectl --kubeconfig=./config --namespace=castle replace -f ./back-deployment.yaml
 
