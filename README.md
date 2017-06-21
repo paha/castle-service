@@ -54,8 +54,8 @@ Consistency and repeatability of the service is achieved by describing service v
 
 ### CI CD:
 
-1. Merges and pushes to the project git repository trigger a test job at Travis-CI. The job runs basic tests and docker builds. Initially only `go fmt && go build` and `docker build`. NOTE: resulting images are not uploaded to Docker Hub, this test validates that the code complies and images build. Unless push/merge is into deploy branch, see bellow.
-1. On merges or pushes (if you dare) to deploy branch (`master` in this case)
+1. Merges and pushes to the project git repository trigger a test job at Travis-CI. The job runs basic tests and docker builds. Initially only `go fmt && go build` and `docker build`. NOTE: resulting images are not uploaded to Docker Hub, this test validates that the code complies and images build. See bellow for deployment job details.
+1. On merges (or pushes if you dare) to deploy branch (`master`) besides all tests from the job above, docker images will be uploaded to Docker Hub and the service will be deployed using `kubectl` without service interruption using rolling update.
 1. Sensitive data is stored using Travis-CI [Encryption keys][19]
 
 
@@ -65,15 +65,33 @@ Consistency and repeatability of the service is achieved by describing service v
 1. Consider serverless architecture for this service, Kube cluster is overkill, plus based on use patens it might save significant amounts.
 1. Design and implement more tests for CI/CD: a) go unit tests for each app; b) docker image tests; c) functional testing etc.
 1. Improve monitoring tracking application specific metrics, add alerting and setup external monitoring for publicly facing service.
-1. HorizontalPodAutoscaler for the www app should be using a custom metrics to trigger up/down scaling, current use of CPU utilization is to demonstrate concept only. A custom kuvbe controller can be written to base scaling decisions on ELB CloudWatch metrics as an alternative.
-1. CI/CD versioned deployments based on Semantic git tags.
+1. HorizontalPodAutoscaler for the www app should be using a custom metrics to trigger up/down scaling, current use of CPU utilization is to demonstrate the concept only. A custom kube controller can be written to base scaling decisions on ELB CloudWatch metrics as an alternative.
+1. CI/CD versioned deployments based on [Semantic versioning][18] git tags.
 1. Implement more service lifeCycle actions for CI/CD: destroy service, deploy to a different cluster etc.
-
+1. Log aggregation and analysis.
 
 ## Additional details
 
 > _Reach out to me with any additional questions or to get more details on the project._
 
+Repository contents:
+
+```bash
+├── .travis.yml                 # Travis-CI configuration
+├── LICENSE                     # Licence
+├── README.md                   # This README
+├── back-deployment.yaml        # Backend kube deployment, service and autoscaling
+├── backend
+│   ├── Dockerfile              # Dockerfile for backend container
+│   └── backend.go              # backend source
+├── castle-namespace.yaml       # Castle namespace kube config
+├── docs
+│   └── arch_diagram.png        # Architectural diagram
+├── www
+│   ├── Dockerfile              # Dockerfile for www container
+│   └── www.go                  # www source
+└── www-deployment.yaml         # www kube deployment and service
+```
 
 -----
 
