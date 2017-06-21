@@ -25,7 +25,7 @@ _Reach out to me with any additional questions or to get more details on the pro
 To meet set criteria a [Kubernetes][3] cluster was setup in AWS ([kops deployment][7]) with autoscalable worker nodes and [Prometheus][8]. Applications have been dockerized.
 
 * Route53 managed delegated subdomain for the project - castle.snagovsky.com
-* Kubernetes cluster in AWS, [API - https://api.castle.snagovsky.com][9], [dashboard - https://kube.castle.snagovsky.com/ui][10]
+* Kubernetes cluster in AWS, kube API - [https://api.castle.snagovsky.com][9], kube dashboard - [https://kube.castle.snagovsky.com/ui][10]
 * [Docker Hub][11] repositories setup to store docker image artifacts.
 * [GitHub][12] + [Travis-Ci][13] projects setup
 
@@ -37,14 +37,14 @@ The service design follows traditional Microservice (contemporary SOA) design pa
 
 Each tier is fronted by a loadbalancer, ELB + kube-proxy in the case of the _www app_ and kube-proxy for the _backend app_ loadbalancing between kube replica-sets for corresponding app with simple healthchecks.
 
-Consistency and repeatability of the service achieved by describing service via Dockerfiles, Kubernetes configuration files, CI/CD config files and helper scripts for CI/CD.
+Consistency and repeatability of the service is achieved by describing service via Dockerfiles, Kubernetes and CI/CD config files.
 
 ### Service and kube cluster.
 
 1. The service endpoint authoritative A record is managed by Route53 aliasing it to ELB resource used for the first tier app ingress.
 1. The service is deployed to a **single** Kubernetes cluster running in the _us-west-2_ AWS region, worker nodes are in a single AZ, autoscaled with ASG.
 1. The only supported protocol for the service is HTTP.
-1. There are two endpoints exposed: 1. The service itself - http://www.castle.snagovsky.com 2. Kubernetes API and dashboard https://api.castle.snagovsky.com.
+1. There are two endpoints exposed: a) The service itself - http://www.castle.snagovsky.com; b) Kubernetes API and dashboard https://api.castle.snagovsky.com.
 1. The first tier (www|frontend) has limited throughput and autoscaled on demand by [_HorizontalPodAutoscaler_][14] with a minimum replicas of 5 to allow at least 50 rps.
 1. The second tier isn't exposed publicly, it has high throughput and deployed with 2 replica-sets for resiliency. With a max of 10 replicas on the first tier, the backend can't become a bottle neck. In case of a failure of a single replica-set it can handle max workloads on a single replica while kube brings up a second healthy one.
 1. Basic metrics are colleted by Prometheus node-exporter and can be presented via Grafana deployed in _monitoring namespace_, or via default Prometheus UI. No alerting or custom metrics are setup. Prometheus and its components are not exposed publicly.
@@ -54,18 +54,19 @@ Consistency and repeatability of the service achieved by describing service via 
 
 ### CI CD:
 
-1. Merges and pushes to the project git repository trigger a test job at Travis-CI. The job runs basic tests and docker builds. Initially only `go fmt && go build` and `docker build`. NOTE: resulting images are not uploaded to Docker Hub, this test validates that the code complies and images build.
-1. Pushing a new git tag triggers a Travis-CI deployment job for the service. The tag must be in [Semantic Versioning][18] format, e.g. `v.0.1.0` to trigger. The job runs tests of the testing job, if successful, pushes resulting images to DockerHub and runs `kubectl` commands to do a rolling update of each of the apps.
-1. Sensitive data is stored
+1. Merges and pushes to the project git repository trigger a test job at Travis-CI. The job runs basic tests and docker builds. Initially only `go fmt && go build` and `docker build`. NOTE: resulting images are not uploaded to Docker Hub, this test validates that the code complies and images build. Unless push/merge is into deploy branch, see bellow.
+1. On merges or pushes (if you dare) to deploy branch (`master` in this case)
+1. Sensitive data is stored using Travis-CI [Encryption keys][19]
 
 
 ## Improvements for the next iteration
 
-1. AWS multiple regions for resiliency and perfomance (geographical aproximity) with Route53 latency based routing rules.
-1. Conciser serverless architecture for this service, Kube cluster is overkill, plus based on use patens it might save significant amounts.
-1. Design and implement more tests for CI/CD.
+1. AWS multiple regions for resiliency and perfomance (geographical approximaty) with Route53 latency based routing rules cross region loadbalancing.
+1. Consider serverless architecture for this service, Kube cluster is overkill, plus based on use patens it might save significant amounts.
+1. Design and implement more tests for CI/CD: a) go unit tests for each app; b) docker image tests; c) functional testing etc.
 1. Improve monitoring tracking application specific metrics, add alerting and setup external monitoring for publicly facing service.
 1. HorizontalPodAutoscaler for the www app should be using a custom metrics to trigger up/down scaling, current use of CPU utilization is to demonstrate concept only. A custom kuvbe controller can be written to base scaling decisions on ELB CloudWatch metrics as an alternative.
+1. CI/CD versioned deployments based on Semantic git tags.
 1. Implement more service lifeCycle actions for CI/CD: destroy service, deploy to a different cluster etc.
 
 
@@ -79,9 +80,9 @@ Consistency and repeatability of the service achieved by describing service via 
 [1]: docs/arch_diagram.png
 [2]: http://www.castle.snagovsky.com
 [3]: https://kubernetes.io
-[4]: README.md#initial_setup
+[4]: README.md#initial-setup
 [5]: README.md#design
-[6]: README.md#improvements_for_the_next_iteration
+[6]: README.md#improvements-for-the-next-iteration
 [7]: https://github.com/kubernetes/kops
 [8]: https://prometheus.io
 [9]: https://api.castle.snagovsky.com
@@ -90,7 +91,8 @@ Consistency and repeatability of the service achieved by describing service via 
 [12]: https://githum.com/paha/castle-service
 [13]: https://travis-ci.org/paha
 [14]: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale
-[15]: README.md#additional_details
-[16]: README.md#service_and_kube_cluster
-[17]: README.md#ci_cd
+[15]: README.md#additional-details
+[16]: README.md#service-and-kube-cluster
+[17]: README.md#ci-cd
 [18]: http://semver.org
+[19]: https://docs.travis-ci.com/user/encryption-keys/
