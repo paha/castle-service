@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: castle-www
+  namespace: castle
+  labels:
+    app: castle-www
+    tier: backend
+    purpose: homework
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: castle-www
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: castle-www
+  namespace: castle
+spec:
+  replicas: 5
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: castle-www
+        tier: frontend
+        purpose: homework
+    spec:
+      containers:
+      - name: castle-www
+        image: pahatmp/castle-www
+        args: ["-backend", "castle-back"]
+        ports:
+        - containerPort: 80
+---
+apiVersion: autoscaling/v2alpha1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: castle-www
+  namespace: castle
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: castle-www
+  minReplicas: 5
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 5

@@ -1,0 +1,20 @@
+.*.swp
+*~
+.*#
+*.bak
+*.old
+#*
+.#*
+.DS_Store
+.Trashes
+.cache
+debug
+/config
+/vendor
+glide.lock
+# Golang
+*.o
+*.a
+*.so
+_obj
+_test

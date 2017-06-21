@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: castle-back
+  namespace: castle
+  labels:
+    app: castle-back
+    tier: backend
+    purpose: homework
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: castle-back
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: castle-back
+  namespace: castle
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: castle-back
+        tier: backend
+        purpose: homework
+    spec:
+      containers:
+      - name: castle-back
+        image: pahatmp/castle-back
+        ports:
+        - containerPort: 80
