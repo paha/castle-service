@@ -1,5 +1,7 @@
 # Castle trivial project
 
+[![Build Status](https://travis-ci.org/paha/castle-service.svg?branch=master)](https://travis-ci.org/paha/castle-service)
+
 Deployment automation for a 2 tier web service.
 
 _The resulting service can be reached at [http://www.castle.snagovsky.com][2]_

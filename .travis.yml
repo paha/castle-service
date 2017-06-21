@@ -1,0 +1,42 @@
+language: go
+sudo: required
+services:
+  - docker
+go:
+  - 1.8.x
+
+env:
+  global:
+    - secure: "dbjFZ2ZzHEnILl6e9W+jftpzFzxCvKgfN6NvrHoELf7kCK6OdYY3e1PBHjeXG2D6UveqCcC9NdYcReeVA8BUvKC0rv/C7UJZMQqPRnxVEC/O3xOISDv8nibKIku9XPLmKws/6y/vm8uamsdprGLFEwK/ebneOwRDJAXcnjRtmW+RpnB8NZdlsyB+BGu5keQUEOPFrUmuxHvIW1gKn4Hq59vlrTF24JdNVlMeoIK0V+9sTKuYFakjlVkasxlBqKAedUqE9oJIgWhQHMHtvoo2zxl6GyMY/N+RVfi8281MPoSPgrzoCm/yvNU5iZvjeoimotqLjj1JIuB64NMtASrKDGVc29mlZfYO+T4YAgqYIsyRk3bZ9Wemwy5dtJRSCHGTHvKCYXPcA/zFhwddQmYuNn0YoxO0yMpHXoeH5IuyMu/R7wwR9XX0PyjtXhhjlbtI2YuPiazdxeDqBD9RuS8JRpM9Go+uIvFRmZhii8j9t8De2OzN0jX418WqT59Qb6JNUba+w7RNAviPW7+MqTO4juXzhSKpXTzNqQ1bOEs9tDhR0m7d2nzJ/MCOi+91/ekP6/0xR3zqVmEGLQob27oo1rJYmFdiCnGNJzApHgZYgRCQD1PrAyDZGZ3v3/buDPq2Ss45fmiWg8rafpSfm/psF1eaHdD8UFMX9I+R+bSJui4=" # DOCKER_USER
+    - secure: "Aztrx85SmqcnwkT68gwmcFke3R585Cim1c2vXQLMwpzltuDTCBkn3wt9AiBOpV4iPT+c1itP4TfWUmHw6CChjUbQuZAHLBgSC7yGPRxC96s9c/xXOO8HNBJUjzlphklvDxwYM1vBCSmsuhzkgoipOMziqGfsfSaEq0RryOtn+oAuc0bqq0mTsI7yVM4c00UHl6ZbwMxkc43Mh1YbBsyyBGlfEKA+cimwW1lmkTw67csCQTkYuZ66zer19+ngrm2RXNa5KVk+Zwuyk0NDsyCbtHIpqkDXteJTX29S5PoFZEg8BbMUVrkWKb/ryBQo6N+GiRUoHR0RYFdY4z2m89PJwyUwBl+lMYSaVG4VjCwRi+8f6+UkbrK1y6HSz20fZPNjbCNk/srH0K6jpegftPokBY0dHJdC17u9kM+iK5jMPVtoan0bmtbei8GUQJBfI3b3tF7UMKGg6MJYdS0WP7nAtPMOl/sz8QPmLgV4HFl1PNbvZpOMkbXoYaHJ4kADMoqCrC7QIthm8GfwrSNMZuZ1Z+FpE4flYq4ICvkdPdWXecmFqI7lSgHS/s4qXCpOXFh26GtE3HK/PeTYmniJSBZbTmorREco1rYgXz+CLVrbeuaF2X/p616QsGrCPmoF/Ti1ZP4dILdKemRzzcbGcVnt9ETVUOtLb6iVisI5PC+oVZ8=" # DOCKER_PASS
+
+before_install:
+  - if [[ ! -d ~/.kube/ ]]; then mkdir ~/.kube; fi
+  - openssl aes-256-cbc -K $encrypted_7f730eada40b_key -iv $encrypted_7f730eada40b_iv -in kube_config.yml.enc -out ~/.kube/config -d
+  - cat ~/.kube/config
+  - echo $encrypted_7f730eada40b_key
+
+before_script:
+  - cd www
+  - go fmt
+  - CGO_ENABLED=0 GOOS=linux go build -a --tags netgo -ldflags '-w' .
+  - docker build -t pahatmp/castle-www .
+  - cd ../backend
+  - go fmt
+  - CGO_ENABLED=0 GOOS=linux go build -a --tags netgo -ldflags '-w' .
+  - docker build -t pahatmp/castle-back .
+  - cd ../
+  - if [ "$TRAVIS_BRANCH" != "master" ]; then exit 0; fi
+
+script:
+  - echo "Uploading images to Docker Hub."
+  - docker login --username "$DOCKER_USER" --password "$DOCKER_PASS"
+  - docker push pahatmp/castle-www
+  - docker push pahatmp/castle-back
+  - echo "Setting up kubectl."
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.6.6//bin/linux/amd64/kubectl
+  - chmod +x ./kubectl
+  - echo "Deploying to kube."
+  - ./kubectl rolling-update castle-www -f ./www-deployment.yaml
+  - ./kubectl rolling-update castle-www -f ./back-deployment.yaml
+
