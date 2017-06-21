@@ -40,7 +40,7 @@ spec:
         ports:
         - containerPort: 80
 ---
-apiVersion: autoscaling/v2alpha1
+apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: castle-www
@@ -52,8 +52,4 @@ spec:
     name: castle-www
   minReplicas: 5
   maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      targetAverageUtilization: 5
+  targetCPUUtilizationPercentage: 50
