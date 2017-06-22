@@ -35,6 +35,5 @@ script:
   - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - chmod +x ./kubectl
   - echo "Deploying to kube."
-  - ./kubectl --kubeconfig=./config --namespace=castle replace -f ./www-deployment.yaml
-  - ./kubectl --kubeconfig=./config --namespace=castle replace -f ./back-deployment.yaml
-
+  - ./kubectl --kubeconfig=./config --namespace=castle apply -f ./www-deployment.yaml
+  - ./kubectl --kubeconfig=./config --namespace=castle apply -f ./back-deployment.yaml
